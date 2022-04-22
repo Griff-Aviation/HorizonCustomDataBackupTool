@@ -9,7 +9,7 @@ function printHelp
     Write-Host "  moveConfig.ps1 restore .\myFolder";
     Write-Host "    - This restores all files from local 'myFolder' folder to Horizon.";
     Write-Host "";
-    Write-Host "  moveConfig.ps1 push .\myFolder -clean";
+    Write-Host "  moveConfig.ps1 restore .\myFolder -clean";
     Write-Host "    - This removes all the previous configuration from Horizon, and then restores all files from local 'myFolder' folder to Horizon.";
 }
 
