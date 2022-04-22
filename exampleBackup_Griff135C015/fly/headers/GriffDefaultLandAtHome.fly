@@ -1,0 +1,29 @@
+// Default fly file - with default patterns and failure patterns    v20130423
+//
+// Notes:
+// 1. The failure patterns are designed with close flights in mind - for example, if you are flying
+//    many miles away and lose GCS and RC communication, you may want to circuit at that location
+//    instead of flying back 'home' to land
+//
+// 2. The patterns are designed for both helicopters and fixed wing craft, but the distances
+//    between waypoints may have to be reduced for helicopters that can only travel at lower speeds
+//
+// 3. Failure patterns include a climb command to ensure a safe altitude target is set, whatever 
+//    the state of the autopilot when the pattern was activated. The examples simply set the target
+//    altitude to current altitude. You may need to adjust the altitude but we recommend keeping 
+//    the climb command there.
+//
+// 4. The engine failure pattern has the ability to restart electric engines, but it is disabled
+//    by default because it will not work with gas engines - to enable the engine restart ability,
+//    uncomment the line [restartEngine] = 1 inside the engine failure pattern.
+
+// default
+
+metric
+
+//[disableGcsCmds] = 0xFFFFFFFF      //Disable some GCS commands during takeoff phase
+takeoff
+climb   25
+[disableGcsCmds] = 0
+waitClimb 25
+wait 100

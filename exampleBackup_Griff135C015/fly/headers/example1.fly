@@ -1,0 +1,7 @@
+//headers\example1.fly
+metric
+[disableGcsCmds] = 0      //Disable some GCS commands during takeoff phase
+takeoff
+climb   200
+[disableGcsCmds] = 0
+waitClimb 100

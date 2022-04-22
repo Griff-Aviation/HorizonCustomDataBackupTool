@@ -1,0 +1,252 @@
+// Default fly file - with default patterns and failure patterns    v20130423
+//
+// Notes:
+// 1. The failure patterns are designed with close flights in mind - for example, if you are flying
+//    many miles away and lose GCS and RC communication, you may want to circuit at that location
+//    instead of flying back 'home' to land
+//
+// 2. The patterns are designed for both helicopters and fixed wing craft, but the distances
+//    between waypoints may have to be reduced for helicopters that can only travel at lower speeds
+//
+// 3. Failure patterns include a climb command to ensure a safe altitude target is set, whatever 
+//    the state of the autopilot when the pattern was activated. The examples simply set the target
+//    altitude to current altitude. You may need to adjust the altitude but we recommend keeping 
+//    the climb command there.
+//
+// 4. The engine failure pattern has the ability to restart electric engines, but it is disabled
+//    by default because it will not work with gas engines - to enable the engine restart ability,
+//    uncomment the line [restartEngine] = 1 inside the engine failure pattern.
+
+// default
+
+metric
+
+//[disableGcsCmds] = 0xFFFFFFFF      //Disable some GCS commands during takeoff phase
+//takeoff
+//climb   25
+//[disableGcsCmds] = 0
+//waitClimb 25
+wait 100
+repeat -1
+//circuit (0, 0), 0, 0
+
+fixed
+
+// define a right-orbit holding pattern
+definePattern 0
+return
+
+// define a left-orbit holding pattern
+definePattern 1
+return
+
+// define a figure-eight holding pattern
+definePattern 2
+return
+
+// Manually take a picture
+definepattern 3
+return
+
+// Hover at the current location for heli - fly around current location if fixed wing
+definePattern 4
+hover 0
+wait 100
+repeat -1
+return
+
+// Land at safeLZ
+definePattern 5
+circuit [safeLZ],1,0
+climb 25
+Wait 100
+repeat -1
+return
+
+// Circle to the right
+definePattern 6
+return
+
+// Circle to the left
+definePattern 7
+return
+
+// Fly home
+definepattern 8
+hoverAt [home]
+repeat -1
+
+
+definepattern 9
+flyTo (0,0)
+repeat -1
+
+// Land at the runway from which you departed
+definepattern 10
+circuit [home], 1, 0
+return
+
+// Land at the UAVs current location
+definepattern 11
+circuit (0, 0), 1, 0
+climb 25
+Wait 100
+repeat -1
+
+
+// Dummy patterns to fill in unused pattern numbers before number 15
+definePattern 12
+flyTo (0,0)
+repeat -1
+
+definePattern 13
+flyTo (0,0)
+repeat -1
+
+definePattern 14
+flyTo (0,0)
+repeat -1
+
+// Pattern for the Goto plugin
+definePattern 15
+hoverAt (0.1E,0.1N)   //The "Go Here" feature will move this waypoint to the destination selected
+repeat -1
+
+
+
+// // RECOVERABLE Failure Patterns // //
+
+// Notes regarding the engine failure pattern:
+// Some speed controllers have problems with overheating, and the solution is to set the throttle to
+// zero and then turn it back on to reset the speed controller.  The engine failure pattern triggers
+// the engine restart, but it is performed in thread 1.
+
+dim restartEngine   //This flag is set by the failure pattern when the engine needs to be restarted
+
+//Disable datalog thread
+thread 1
+[preventdatalogrecording] = 1
+waitequal [armed],1
+[preventdatalogrecording] = 0
+waitequal [armed],0
+repeat -4
+
+
+
+// Emergency stop engine thread - set up payload button in Horizon to ask for confirmation
+thread 2
+wait 0   // pause thread until payload button activates this
+[helistopEngine] = 1
+repeat -2
+
+// Main power thread
+thread 3
+wait 0
+[cioStateA11] = 1
+wait 0
+skipNotEqual [armed],1
+repeat -2
+[cioStateA11] = 0
+repeat -6
+
+thread 4
+waitEqual [armed], 1
+[pidMaxResult5]=3276
+[pidMinResult5]=-3276
+waitEqual [offGround], 1
+wait 5
+[pidMaxResult5]=7500
+[pidMinResult5]=-7500
+waitEqual [armed], 0
+repeat -8
+
+thread 5
+waitGreaterThan [2180],3000  // CH7 positive
+[1717] = 1                                     // Drop payload
+waitLessThan [2180],3000       // CH7 Negative
+[1717] = 0                                    // Reset payload
+repeat -4
+
+//RC Transmitter Lost - Fly towards home until RC returns
+// 
+definePattern rcFailed
+climb [currentAltitude]
+push [kount]
+add 300      // 60 seconds
+pop [fServo32]
+hover 0
+skipgreaterthan [kount], [fServo32]   // if 60 seconds passes and still in the failure pattern, cut engine
+repeat -2
+//
+circuit [home]
+repeat -1
+
+
+//GPS Lost - Fly about in a circle until GPS returns in fixed wing, do nothing for heli
+//The GPS failure control dialog will appear if enabled - this allows the roll angle
+//to be adjusted in a fixed wing UAV to provide navigation capability, and allows the
+//pitch and roll angles to be adjusted on a heli to try to keep it in a stable hover
+pattern gpsFailed
+climb [currentAltitude]
+waitEqual [helicopter], 0   // Heli autopilots will wait here forever
+[noGPSdRollOverride]=22	    // Apply 22 degrees roll for fixed wing so it will bank and turn
+wait 100
+setControl thFixed, 0      // set 0 throttle and allow to descend at current location
+wait 0
+repeat -1
+
+
+//GCS Link Lost - Fly towards home until GCS link returns
+// 
+pattern gcsFailed
+climb [currentAltitude]
+push [kount]
+add 300      // 60 seconds
+pop [fServo32]
+hover 0
+skipgreaterthan [kount], [fServo32]      // if 60 seconds passes and still in the failure pattern, stop engine
+repeat -2
+//
+circuit [home]
+repeat -1
+
+
+
+//Engine Failed - Try to restart engine
+//disable for now
+pattern engineFailed
+climb [currentAltitude]
+hoverat [home]
+repeat -1
+
+
+// // UNRECOVERABLE Failure Patterns // //
+
+//Control failed - stop the engine and drop out of the sky
+// this pattern is really of use only if you have a parachute
+//pattern controlFailed
+//waitEqual [helicopter], 0   // heli autopilots will wait here forever
+// fixed wing will continue below...
+//[stopEngine] = 1
+// fire parachute servo here
+//wait 100
+//repeat -1
+
+
+//Fatal error - Fly to home
+pattern fatalErrorFailed
+climb [currentAltitude]
+hoverat [home]
+circuit [home]
+repeat -1
+
+
+
+//Battery failed - Fly to home
+// Note the planned behaviour will depend on how much battery life remains after the low
+// battery state is activated
+pattern batVFailed
+climb [currentAltitude]
+hoverAt [home]
+climb 0             //Circle around home and descend
+repeat -2
