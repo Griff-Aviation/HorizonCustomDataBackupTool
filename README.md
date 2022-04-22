@@ -5,7 +5,7 @@ This tool is designed for easier data migration between Horizon installations. I
 Download the latest release [here](https://github.com/Griff-Aviation/HorizonCustomDataBackupTool/releases/latest).
 
 ## How to use it
-I recommend to run the [moveConfig.ps1](/moveConfig.ps1) directly in Windows PowerShell. If you do not have access to the real keyboard, you can run the [gui.exe](/gui.exe) and set everything by mouse only.
+I recommend to run the [moveConfig.ps1](/moveConfig.ps1) directly in Windows PowerShell. If you do not have access to the real keyboard, you can run the `gui.exe` and set everything by mouse only.
 
 ### PowerShell script moveConfig.ps1
 When you execute the file in PowerShell with no arguments. This help text is displayed:
